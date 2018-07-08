@@ -54,7 +54,7 @@ module Rswag
         definitions[key]
       end
 
-      def add_verb(request, metadata) 
+      def add_verb(request, metadata)
         request[:verb] = metadata[:operation][:verb]
       end
 
@@ -63,12 +63,12 @@ module Rswag
 
         request[:path] = template.tap do |template|
           parameters.select { |p| p[:in] == :path }.each do |p|
-            template.gsub!("{#{p[:name]}}", example.send(p[:name]).to_s)
+            template.gsub!("{#{p[:name]}}", example.send(p[:alias] || p[:name]).to_s)
           end
 
           parameters.select { |p| p[:in] == :query }.each_with_index do |p, i|
             template.concat(i == 0 ? '?' : '&')
-            template.concat(build_query_string_part(p, example.send(p[:name])))
+            template.concat(build_query_string_part(p, example.send(p[:alias] || p[:name])))
           end
         end
       end
@@ -94,7 +94,7 @@ module Rswag
       def add_headers(request, metadata, swagger_doc, parameters, example)
         tuples = parameters
           .select { |p| p[:in] == :header }
-          .map { |p| [ p[:name], example.send(p[:name]).to_s ] }
+          .map { |p| [ p[:name], example.send(p[:alias] || p[:name]).to_s ] }
 
         # Accept header
         produces = metadata[:operation][:produces] || swagger_doc[:produces]
@@ -104,7 +104,7 @@ module Rswag
         end
 
         # Content-Type header
-        consumes = metadata[:operation][:consumes] || swagger_doc[:consumes] 
+        consumes = metadata[:operation][:consumes] || swagger_doc[:consumes]
         if consumes
           content_type = example.respond_to?(:'Content-Type') ? example.send(:'Content-Type') : consumes.first
           tuples << [ 'Content-Type', content_type ]
@@ -144,7 +144,7 @@ module Rswag
         # PROS: simple to implement, CONS: serialization/deserialization is bypassed in test
         tuples = parameters
           .select { |p| p[:in] == :formData }
-          .map { |p| [ p[:name], example.send(p[:name]) ] }
+          .map { |p| [ p[:name], example.send(p[:alias] || p[:name]) ] }
         Hash[ tuples ]
       end
 
